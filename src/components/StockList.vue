@@ -68,6 +68,11 @@
           </el-table-column>
         </el-table>
       </el-row>
+      <el-row style="margin-top: 15px">
+        <el-col :span=24 align="end">
+          <el-button @click="handlePrint" v-loading="printLoading">打印</el-button>
+        </el-col>
+      </el-row>
       <div>
         <!--新增界面-->
         <el-dialog title="新增入库信息" :visible.sync="addFormVisible" v-loading="addLoading">
@@ -134,6 +139,7 @@
               materialData: [],
               listLoading: false,
               addLoading: false,
+              printLoading: false,
               keywords: '',
               searchType: '1',
               addFormVisible: false,
@@ -184,6 +190,7 @@
             this.addFormVisible = true;
             this.material_name = this.stockData[index].material_name;
             this.area_name = this.stockData[index].area_name;
+            this.goods.goods_id = this.stockData[index].id;
           },
           cancelAdd() {
             this.addFormVisible = false;
@@ -192,13 +199,12 @@
               area_id: 0,
               update_date: '',
               goods_id: 0,
-              deliver_owner: '',
+              deliver_owner: null,
               update_size: 0,
               behavior: 0,
               username: ''
             };
           },
-          // 415
           submitAdd() {
             if (this.goods.update_size === 0) {
               this.$message({type: 'error', message: '请选择数量!'});
@@ -208,18 +214,17 @@
               this.$message({type: 'error', message: '请填写交易人!'});
               return;
             }
-            this.goods.goods_id = this.stockData[index].id;
-            this.goods.material_id = this.stockData[index].material_id;
-            this.goods.area_id = this.stockData[index].area_id;
             this.goods.username = localStorage.getItem('username');
             let t = new Date();
             this.goods.update_date = t.format('yyyy-MM-dd HH:mm:ss');
-            for (let key in this.goods) {
-              alert(key);
-              alert(this.goods[key]);
-            }
+            let url = '/apis/goods/update?goods_id=' + this.goods.goods_id 
+            + '&update_date=' + this.goods.update_date 
+            + '&update_size=' + this.goods.update_size 
+            + '&behavior=' + this.goods.behavior 
+            + '&username=' + this.goods.username;
+            if (this.goods.behavior === 1) url += '&deliver_owner=' + this.goods.deliver_owner;
             this.addLoading = true;
-            this.$http.post('/apis/goods/update?goodsId=' + this.goods.goods_id, this.goods, {headers: {
+            this.$http.post(url, {headers: {
                 'Content-Type': 'application/json',
                 'token': localStorage.getItem("token")
               }}).then(response => {
@@ -239,10 +244,37 @@
           },
           toInventory(id) {
             this.$router.push({
-              path:'/goodsInventory',
+              path:'/manager/goodsInventory',
               query:{
                 id:id
               }
+            });
+          },
+          handlePrint() {
+            let t = new Date();
+            let print = {
+              print_date: t.format('yyyy-MM-dd HH:mm:ss'),
+              username: localStorage.getItem('username'),
+              behavior: 0,
+              behavior_name: '',
+              goods_id: 0
+            };
+            this.printLoading = true;
+            this.$http.post('/apis/print/add', print, {headers: {
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem("token")
+              }}).then(response => {
+              if (response.status === 200) {
+                this.$message({type: 'success', message: '打印成功!'});
+                this.printLoading = false;
+              }
+              else {
+                this.$message({type: 'error', message: '打印失败!'});
+                this.printLoading = false;
+              }
+            }, response => {
+              this.$message({type: 'error', message: '打印失败!'});
+              this.printLoading = false;
             });
           }
         },

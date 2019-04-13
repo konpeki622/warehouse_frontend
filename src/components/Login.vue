@@ -68,16 +68,16 @@
                   });
                   window.setTimeout(_ => {
                     switch (localStorage.getItem('auth')) {
-                      case 0 : {
-                        this.$router.push('/worker/stock');
+                      case '0' : {
+                        this.$router.push('/worker');
                         break;
                       }
-                      case 1 : {
-                        this.$router.push('/manager/stock');
+                      case '1' : {
+                        this.$router.push('/manager');
                         break;
                       }
                       default: {
-                        this.$router.push('/admin/material');
+                        this.$router.push('/admin');
                         break;
                       }
                     }
@@ -89,7 +89,7 @@
                   this.$notify.error({
                     title: '登录失败',
                     message: '用户名密码不匹配或网络错误',
-                    duration:200
+                    duration:2000
                   });
                   this.logining = false;
                 }

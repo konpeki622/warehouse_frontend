@@ -8,22 +8,22 @@
           <el-table :data="printData" v-loading="printLoading">
             <el-table-column label="日期" align="center">
               <template slot-scope="scope">
-                {{scope.row.printTime}}
+                {{scope.row.print_date}}
               </template>
             </el-table-column>
             <el-table-column label="用户名" align="center">
               <template slot-scope="scope">
-                {{scope.row.printUser}}
+                {{scope.row.username}}
               </template>
             </el-table-column>
             <el-table-column label="操作" align="center">
               <template slot-scope="scope">
-                {{scope.row.printDetail}}
+                {{scope.row.behavior}}
               </template>
             </el-table-column>
             <el-table-column label="单号" align="center">
               <template slot-scope="scope">
-                {{scope.row.printID}}
+                {{scope.row.goods_id}}
               </template>
             </el-table-column>
           </el-table>
@@ -43,13 +43,37 @@
       },
       methods: {
           getPrintData() {
-            this.printData.push({
-              printTime: '2019-02-05',
-              printUser: 'maomao381',
-              printDetail: '打印入库信息',
-              printID: 2
-            })
-          }
+            this.printData = [];
+            this.printLoading = true;
+            this.$http.get('/apis/history/print', {headers: {
+              'Content-Type': 'application/json',
+              'token': localStorage.getItem("token")
+              }}).then(response => {
+              if (response.status === 200) {
+                let printList = JSON.parse(response.bodyText);
+                let i = 0;
+                
+                while (i < printList.data.length) {
+                  this.printData.push({
+                    id: printList.data[i].id,
+                    print_date: printList.data[i].print_date,
+                    username: printList.data[i].username,
+                    behavior: printList.data[i].behavior_name,
+                    goods_id: printList.data[i].goods_id
+                  });
+                  i++;
+                }
+                this.printLoading = false;
+              }
+              else {
+                this.$message({type: 'error', message: '加载失败!'});
+                this.printLoading = false;
+              }
+            }, response => {
+              this.$message({type: 'error', message: '加载失败!'});
+              this.printLoading = false;
+            });
+          },
       },
       mounted() {
           this.getPrintData();

@@ -3,18 +3,25 @@
     <el-main>
       <el-row>
         <el-form :inline="true">
-          <el-form-item>
+          <!-- el-form-item>
             <el-input v-model="keywords" placeholder="输入关键字"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="primary">查询信息</el-button>
-          </el-form-item>
+          </el-form-item -->
           <el-form-item>
             <el-button type="primary" @click="handleAdd">添加信息</el-button>
           </el-form-item>
         </el-form>
       </el-row>
-      <el-row>
+      <el-row style="margin-top: 15px">
+        <el-radio-group v-model="accountType" @change="handleChange">
+          <el-radio :label="0">全部</el-radio>
+          <el-radio :label="1">只看入库</el-radio>
+          <el-radio :label="2">只看出库</el-radio>
+          </el-radio-group>
+      </el-row>
+      <el-row style="margin-top: 15px">
         <el-table
           :data="accountData"
           v-loading="listLoading"
@@ -76,6 +83,11 @@
           </el-table-column>
         </el-table>
       </el-row>
+      <el-row style="margin-top: 15px">
+        <el-col :span=24 align="end">
+          <el-button @click="handlePrint" v-loading="printLoading">打印</el-button>
+        </el-col>
+      </el-row>
       <div>
         <!--新增界面-->
         <el-dialog title="新增信息" :visible.sync="addFormVisible" v-loading="addLoading">
@@ -129,8 +141,10 @@
                 materialData: [],
                 areaData: [],
                 accountData: [],
+                accountType: 0,
                 listLoading: false,
                 addLoading: false,
+                printLoading: false,
                 keywords: '',
                 addFormVisible: false,
                 goods: {
@@ -223,6 +237,72 @@
                     this.listLoading = false;
                 });
             },
+            getAccountStore() {
+              this.accountData = [];
+                this.listLoading = true;
+                this.$http.get('/apis/store', {headers: {
+                    'Content-Type': 'application/json',
+                    'token': localStorage.getItem("token")
+                  }}).then(response => {
+                    if (response.status === 200) {
+                        let accountList = JSON.parse(response.bodyText);
+                        let i = 0;
+                        while (i < accountList.data.length) {
+                            this.accountData.push({
+                                id: accountList.data[i].id,
+                                material_name: accountList.data[i].material_name,
+                                area_name: accountList.data[i].area_name,
+                                deliver_owner: accountList.data[i].deliver_owner,
+                                update_date: accountList.data[i].update_date,
+                                update_size: accountList.data[i].update_size,
+                                behavior: accountList.data[i].behavior
+                            });
+                            i++;
+                        }
+                        this.listLoading = false;
+                    }
+                    else {
+                        this.$message({type: 'error', message: '加载失败!'});
+                        this.listLoading = false;
+                    }
+                }, response => {
+                    this.$message({type: 'error', message: '加载失败!'});
+                    this.listLoading = false;
+                });
+            },
+            getAccountDeliver() {
+              this.accountData = [];
+                this.listLoading = true;
+                this.$http.get('/apis/deliver', {headers: {
+                    'Content-Type': 'application/json',
+                    'token': localStorage.getItem("token")
+                  }}).then(response => {
+                    if (response.status === 200) {
+                        let accountList = JSON.parse(response.bodyText);
+                        let i = 0;
+                        while (i < accountList.data.length) {
+                            this.accountData.push({
+                                id: accountList.data[i].id,
+                                material_name: accountList.data[i].material_name,
+                                area_name: accountList.data[i].area_name,
+                                deliver_owner: accountList.data[i].deliver_owner,
+                                update_date: accountList.data[i].update_date,
+                                update_size: accountList.data[i].update_size,
+                                behavior: accountList.data[i].behavior
+                            });
+                            i++;
+                        }
+                        this.listLoading = false;
+                    }
+                    else {
+                        this.$message({type: 'error', message: '加载失败!'});
+                        this.listLoading = false;
+                    }
+                }, response => {
+                    this.$message({type: 'error', message: '加载失败!'});
+                    this.listLoading = false;
+                });
+            },
             handleAdd: function () {
                 this.addFormVisible = true;
             },
@@ -238,14 +318,15 @@
               this.goods.username = localStorage.getItem('username');
               let t = new Date();
               this.goods.update_date = t.format('yyyy-MM-dd HH:mm:ss');
-              for (let key in this.goods) {
-                alert(key);
-                alert(this.goods[key]);
-              }
-                //TODO: 写入后台
-                /*
+              let url = '/apis/goods/update?material_id=' + this.goods.material_id 
+                        + '&area_id=' + this.goods.area_id
+                        + '&update_date=' + this.goods.update_date 
+                        + '&update_size=' + this.goods.update_size 
+                        + '&behavior=' + this.goods.behavior 
+                        + '&username=' + this.goods.username;
+            if (this.goods.behavior === 1) url += '&deliver_owner=' + this.goods.deliver_owner;
                 this.addLoading = true;
-                this.$http.post('/apis/store/add', this.goods).then(response => {
+                this.$http.post(url).then(response => {
                     if (response.status === 200) {
                         this.$message({type: 'success', message: '信息添加完成'});
                         this.addLoading = false;
@@ -260,8 +341,67 @@
                 }).catch((response) => {
                     this.$message({type: 'error', message: '请重试'});
                     this.addLoading = false;
-                });*/
+                });
             },
+            handlePrint() {
+            let t = new Date();
+            let print = {
+              print_date: t.format('yyyy-MM-dd HH:mm:ss'),
+              username: localStorage.getItem('username'),
+              behavior: 0,
+              behavior_name: '',
+              goods_id: 0
+            };
+            switch(this.accountType) {
+              case 0: {
+                print.behavior = 1;
+                break;
+              }
+              case 1: {
+                print.behavior = 2;
+                break;
+              }
+              case 2: {
+                print.behavior = 3;
+                break;
+              }
+              default: break;
+            }
+            this.printLoading = true;
+            this.$http.post('/apis/print/add', print, {headers: {
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem("token")
+              }}).then(response => {
+              if (response.status === 200) {
+                this.$message({type: 'success', message: '打印成功!'});
+                this.printLoading = false;
+              }
+              else {
+                this.$message({type: 'error', message: '打印失败!'});
+                this.printLoading = false;
+              }
+            }, response => {
+              this.$message({type: 'error', message: '打印失败!'});
+              this.printLoading = false;
+            });
+          },
+          handleChange() {
+            switch(this.accountType) {
+              case 0: {
+                this.getAccountAll();
+                break;
+              }
+              case 1: {
+                this.getAccountStore();
+                break;
+              }
+              case 2: {
+                this.getAccountDeliver();
+                break;
+              }
+              default: break;
+            }
+        },
         },
         created() {
             this.getAccountAll();
