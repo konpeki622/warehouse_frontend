@@ -18,7 +18,7 @@
             placeholder="请输入用户名"
           ></el-input>
         </el-form-item>
-        <el-form-item prop="password">
+        <el-form-item prop="password" style="margin-top: 20px">
           <el-input
             type="password"
             v-model="registerForm.password"
@@ -26,7 +26,7 @@
             placeholder="请输入密码"
           ></el-input>
         </el-form-item>
-        <el-form-item prop="passConfirm">
+        <el-form-item prop="passConfirm" style="margin-top: 20px">
           <el-input
             type="password"
             v-model="registerForm.passConfirm"
@@ -34,7 +34,7 @@
             placeholder="请再次输入密码"
           ></el-input>
         </el-form-item>
-        <el-form-item prop="auth">
+        <el-form-item prop="auth" style="margin-top: 5px">
           <el-radio-group v-model="registerForm.auth">
             <el-radio :label="0">原料管理员</el-radio>
             <el-radio :label="1">财务经理</el-radio>
@@ -114,42 +114,49 @@ export default {
       this.$refs.registerForm.validate(valid => {
         if (valid) {
           this.registering = true;
-          let user = {
-            username: this.registerForm.username,
-            password: this.registerForm.password,
-            auth: this.registerForm.auth
-          };
-          this.$http.post("/apis/register", user).then(
-            response => {
-              if (response.status === 200) {
-                this.$notify({
-                  title: "注册成功",
-                  message: "跳转到登录界面",
-                  type: "success",
-                  duration: 2000
-                });
-                window.setTimeout(_ => {
-                  this.$router.push("/login");
-                }, 1000 * 3);
-                this.registering = false;
-              } else {
+          this.$http
+            .post(
+              "/apis/register",
+              {},
+              {
+                params: {
+                  username: this.registerForm.username,
+                  password: this.registerForm.password,
+                  auth: this.registerForm.auth
+                }
+              }
+            )
+            .then(
+              response => {
+                if (response.status === 200) {
+                  this.$notify({
+                    title: "注册成功",
+                    message: "跳转到登录界面",
+                    type: "success",
+                    duration: 2000
+                  });
+                  window.setTimeout(_ => {
+                    this.$router.push("/login");
+                  }, 1000 * 3);
+                  this.registering = false;
+                } else {
+                  this.$notify.error({
+                    title: "注册失败",
+                    message: "网络错误",
+                    duration: 200
+                  });
+                  this.registering = false;
+                }
+              },
+              response => {
                 this.$notify.error({
                   title: "注册失败",
                   message: "网络错误",
-                  duration: 200
+                  duration: 2000
                 });
                 this.registering = false;
               }
-            },
-            response => {
-              this.$notify.error({
-                title: "注册失败",
-                message: "网络错误",
-                duration: 2000
-              });
-              this.registering = false;
-            }
-          );
+            );
         } else {
           console.log("error submit!!");
           return false;

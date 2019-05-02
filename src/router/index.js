@@ -5,18 +5,18 @@ import Register from '../components/Register.vue'
 import NotFound from '../components/404.vue'
 import Home from '../components/Home.vue'
 // 原料管理员
-import wInventory from '../components/Inventory.vue'
-import wStock from '../components/StockList.vue'
-import wMaterial from '../components/MaterialList.vue'
+import wInventory from '../components/worker/Inventory.vue'
+import wStock from '../components/worker/StockList.vue'
+import wMaterial from '../components/worker/MaterialList.vue'
 // 经理
-import mStock from '../components/StockList.vue'
-import mGoodsInventory from '../components/GoodsInventory.vue'
-import mInventory from '../components/Inventory.vue'
-import mStockGraph from '../components/StockGraph.vue'
+import mStock from '../components/manager/StockList.vue'
+import mGoodsInventory from '../components/manager/GoodsInventory.vue'
+import mInventory from '../components/manager/Inventory.vue'
+import mStockGraph from '../components/manager/StockGraph.vue'
 // 系统管理员
-import aMaterial from '../components/MaterialList.vue'
-import aPrintHistory from '../components/PrintHistory.vue'
-import aUpdateHistory from '../components/UpdateHistory.vue'
+import aMaterial from '../components/admin/MaterialList.vue'
+import aPrintHistory from '../components/admin/PrintHistory.vue'
+import aUpdateHistory from '../components/admin/UpdateHistory.vue'
 
 Vue.use(Router);
 
@@ -26,7 +26,7 @@ export default new Router({
       path: '/worker',
       component: Home,
       name: '原料管理',
-      iconCls: 'el-icon-message',//图标样式class
+      iconCls: 'el-icon-document',//图标样式class
       redirect: '/worker/stock',
       children: [
         { path: '/worker/stock', component: wStock, name: '库存信息' },
@@ -38,20 +38,20 @@ export default new Router({
       path: '/manager',
       component: Home,
       name: '台账管理',
-      iconCls: 'el-icon-message',//图标样式class
+      iconCls: 'el-icon-date',//图标样式class
       redirect: '/manager/stock',
       children: [
-        { path: '/manager/stock', component: mStock, name: '库存信息', hidden: false },
-        { path: '/manager/inventory', component: mInventory, name: '库存流水', hidden: false },
-        { path: '/manager/goodsInventory', component: mGoodsInventory, name: '单个流水', hidden: true},
-        { path: '/manager/goodsGraph', component: mStockGraph, name: '统计图表', hidden: false}
+        { path: 'stock', component: mStock, name: '库存信息', hidden: false },
+        { path: 'inventory', component: mInventory, name: '库存流水', hidden: false },
+        { path: 'goodsInventory', component: mGoodsInventory, name: '单个流水', hidden: true},
+        { path: 'goodsGraph', component: mStockGraph, name: '统计图表', hidden: false}
       ]
     },
     {
       path: '/admin',
       component: Home,
       name: '系统管理',
-      iconCls: 'fa fa-bar-chart',
+      iconCls: 'el-icon-setting',
       redirect: '/admin/material',
       children: [
         { path: '/admin/material', component: aMaterial, name: '原料管理' },

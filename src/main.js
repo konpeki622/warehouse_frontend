@@ -15,6 +15,24 @@ Vue.use(VueResource)
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
+  if (token && to.path === '/404') {
+
+    switch (localStorage.getItem('menu_id')) {
+      case '0': {
+        next({path: '/worker'})
+        break;
+      }
+      case '1': {
+        next({path: '/manager'})
+        break;
+      }
+      case '2': {
+        next({path: '/admin'})
+        break;
+      }
+      default: break;
+    }
+  }
   if (!token && !(to.path === '/login' || to.path === '/register')) {
     next({ path: '/login' })
   } else {
@@ -22,7 +40,7 @@ router.beforeEach((to, from, next) => {
   }
   if (token && to.path === '/login' || to.path === '/register') {
     localStorage.removeItem('token');
-    localStorage.removeItem('auth');
+    localStorage.removeItem('menu_id');
     if (!localStorage.getItem('checked')) {
       localStorage.removeItem('password');
     }

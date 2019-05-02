@@ -67,7 +67,7 @@ export default {
                   const result = JSON.parse(response.bodyText);
                   let user = result.data.user;
                   localStorage.setItem("token", result.data.token);
-                  localStorage.setItem("auth", user.auth);
+                  localStorage.setItem("menu_id", user.menu_id);
                   localStorage.setItem("username", this.loginForm.account);
                   if (this.checked) {
                     localStorage.setItem("checked", 1);
@@ -82,7 +82,7 @@ export default {
                     duration: 2000
                   });
                   window.setTimeout(_ => {
-                    switch (localStorage.getItem("auth")) {
+                    switch (localStorage.getItem("menu_id")) {
                       case "0": {
                         this.$router.push("/worker");
                         break;
