@@ -22,7 +22,7 @@
             ></el-option>
           </el-select>
         </el-col>
-        <el-col :span="4" v-if="graphType === 0 && searchType < 3">
+        <el-col :span="4" v-if="graphType === 0 && searchType < 2">
           <span>
             <el-date-picker
               v-model="year"
@@ -51,23 +51,20 @@
           </el-select>
         </el-col>
         <el-col :span="4" v-if="graphType === 0 && searchType === 2">
-          <span>
-            <el-date-picker
-              v-model="month"
-              type="month"
-              format="M"
-              style="width: 150px;"
-              placeholder="选择月"
-              @change="handleSearchByMonth(1)"
-              size="small"
-            ></el-date-picker>
-          </span>
-          <span style="margin-left: 5px">月</span>
+          <el-date-picker
+            v-model="month"
+            type="month"
+            format="yyyy年M月"
+            style="width: 150px;"
+            placeholder="选择月"
+            @change="handleSearchByMonth()"
+            size="small"
+          ></el-date-picker>
         </el-col>
         <el-col></el-col>
       </el-row>
       <el-row v-if="graphType === 0">
-        <div id="chartDate" class="my-chart"></div>
+        <div id="chartDate" class="my-chart" v-if="searchType === 0 || searchType === 2"></div>
         <el-row>
           <el-table
             id="table-content"
@@ -141,12 +138,12 @@
             <div id="chartDeliver" class="my-chart"></div>
           </el-col>
         </el-row>
-      </el-row>
-      <el-row>
-        <div id="chartSum" class="my-chart"></div>
-      </el-row>
-      <el-row>
-        <div id="chartSell" class="my-chart"></div>
+        <el-row>
+          <div id="chartSum" class="my-chart"></div>
+        </el-row>
+        <el-row>
+          <div id="chartSell" class="my-chart"></div>
+        </el-row>
       </el-row>
     </el-main>
   </el-container>
@@ -165,6 +162,7 @@ export default {
       remainData: [],
       materialData: [],
       areaData: [],
+      monthlyData: [],
       listLoading: false,
       printLoading: false,
       year: Date(),
@@ -289,11 +287,17 @@ export default {
           }
         });
     },
-    drawDateChart(deliverData, storeData, subData) {
+    drawDateChart(seriesData, yData) {
       let chart = echarts.init(document.getElementById("chartDate"));
+      let name;
+      if (this.searchType === 0) {
+        name = "年度报表";
+      } else if (this.searchType === 2) {
+        name = "月度报表";
+      }
       chart.clear();
       chart.setOption({
-        title: { text: "年度报表" },
+        title: { text: name },
         dataZoom: [
           {
             type: "slider",
@@ -330,56 +334,10 @@ export default {
           {
             type: "category",
             axisTick: { show: false },
-            data: [
-              "1月",
-              "2月",
-              "3月",
-              "4月",
-              "5月",
-              "6月",
-              "7月",
-              "8月",
-              "9月",
-              "10月",
-              "11月",
-              "12月"
-            ]
+            data: yData
           }
         ],
-        series: [
-          {
-            name: "销售量",
-            type: "bar",
-            label: {
-              normal: {
-                show: true
-              }
-            },
-            data: subData
-          },
-          {
-            name: "入库",
-            type: "bar",
-            stack: "销售量",
-            label: {
-              normal: {
-                show: true
-              }
-            },
-            data: storeData
-          },
-          {
-            name: "出库",
-            type: "bar",
-            stack: "销售量",
-            label: {
-              normal: {
-                show: true
-              }
-            },
-            data: deliverData
-          }
-        ]
+        series: seriesData
       });
     },
     drawStoreChart(xData) {
@@ -500,7 +458,7 @@ export default {
       var chart = echarts.init(document.getElementById("chartSell"));
       chart.clear();
       chart.setOption({
-        title: { text: "净销售量对比（数据太少）" },
+        title: { text: "净销售量对比" },
         color: ["#CCAE33"],
         tooltip: {
           trigger: "axis",
@@ -611,7 +569,7 @@ export default {
         }
         case 2: {
           this.currentPage = 1;
-          this.handleSearchByMonth(this.currentPage);
+          this.handleSearchByMonth();
           break;
         }
         case 3: {
@@ -651,7 +609,7 @@ export default {
         }
         case 2: {
           this.currentPage = val;
-          this.handleSearchByMonth(this.currentPage);
+          this.searchByMonth(this.currentPage);
           break;
         }
         case 3: {
@@ -687,11 +645,6 @@ export default {
         case 1: {
           this.currentPage = 1;
           this.handleSearchBySeason(this.currentPage);
-          break;
-        }
-        case 2: {
-          this.currentPage = 1;
-          this.handleSearchByMonth(this.currentPage);
           break;
         }
         default:
@@ -907,10 +860,51 @@ export default {
     },
     drawYearGraph() {
       let today = new Date();
-      let interval =
-        Number(today.getFullYear()) - Number(this.year.getFullYear());
+      let seriesData = [
+        {
+          name: "销售量",
+          type: "bar",
+          data: new Array(12)
+        },
+        {
+          name: "入库",
+          type: "bar",
+          stack: "销售量",
+          data: new Array(12)
+        },
+        {
+          name: "出库",
+          type: "bar",
+          stack: "销售量",
+          barGap: "10%",
+          data: new Array(12)
+        }
+      ];
+      let yData = [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月"
+      ];
+      for (let i = 0; i < 12; i++) {
+        let interval =
+          today.getMonth() -
+          i +
+          (Number(today.getFullYear()) - Number(this.year.getFullYear())) * 12;
+        this.getYearGraph(interval, seriesData, i, yData);
+      }
+    },
+    getYearGraph(interval, seriesData, index, yData) {
       this.$http
-        .get("/apis/account/graph?type=5&condition=" + interval + "&page=0", {
+        .get("/apis/account/graph?type=0&condition=" + interval, {
           headers: {
             token: localStorage.getItem("token")
           }
@@ -918,27 +912,20 @@ export default {
         .then(
           response => {
             if (response.status === 200) {
-              let accountList = JSON.parse(response.bodyText);
-              var storeData = new Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-              var deliverData = new Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-              var subData = new Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-              let i = 0;
-              let j = 11;
-              while (i < accountList.data.length) {
-                let m = Number(accountList.data[i].update_date.slice(5, 7));
-                while (j > m - 1) {
-                  j--;
+              let res = JSON.parse(response.bodyText);
+              seriesData[0].data[index] = 0;
+              seriesData[1].data[index] = 0;
+              seriesData[2].data[index] = 0;
+              for (let i = 0; i < res.data.length; i++) {
+                if (Number(res.data[i].key_name) === 0) {
+                  seriesData[1].data[index] = res.data[i].goods_sum;
+                } else if (Number(res.data[i].key_name) === 1) {
+                  seriesData[2].data[index] = -1 * res.data[i].goods_sum;
                 }
-                if (accountList.data[i].behavior === 0) {
-                  storeData[j] -= accountList.data[i].update_size;
-                  subData[j] -= accountList.data[i].update_size;
-                } else {
-                  deliverData[j] += accountList.data[i].update_size;
-                  subData[j] += accountList.data[i].update_size;
-                }
-                i++;
               }
-              this.drawDateChart(deliverData, storeData, subData);
+              seriesData[0].data[index] =
+                -1 * (seriesData[2].data[index] + seriesData[1].data[index]);
+              this.drawDateChart(seriesData, yData);
             } else {
               this.$message({ type: "error", message: "图表加载失败!" });
             }
@@ -956,7 +943,7 @@ export default {
         Number(today.getFullYear()) - Number(this.year.getFullYear());
       this.$http
         .get(
-          "/apis/account/graph?type=5&condition=" + interval + "&page=" + page,
+          "/apis/account/table?type=5&condition=" + interval + "&page=" + page,
           {
             headers: {
               token: localStorage.getItem("token")
@@ -1004,7 +991,7 @@ export default {
       let interval = intervalYear * 10 + intervalSeason;
       this.$http
         .get(
-          "/apis/account/graph?type=4&condition=" + interval + "&page=" + page,
+          "/apis/account/table?type=4&condition=" + interval + "&page=" + page,
           {
             headers: {
               token: localStorage.getItem("token")
@@ -1041,18 +1028,90 @@ export default {
           }
         );
     },
-    handleSearchByMonth(page) {
+    drawMonthGraph(year, month) {
+      let today = new Date();
+      let last = new Date(year, month + 1, 0).getDate();
+      let date = today.getDate();
+      let seriesData = [
+        {
+          name: "销售量",
+          type: "bar",
+          data: new Array(last)
+        },
+        {
+          name: "入库",
+          type: "bar",
+          stack: "销售量",
+          data: new Array(last)
+        },
+        {
+          name: "出库",
+          type: "bar",
+          stack: "销售量",
+          barGap: "10%",
+          data: new Array(last)
+        }
+      ];
+      let yData = new Array();
+      for (let i = 0; i < last; i++) {
+        let interval = parseInt(
+          (today - new Date(year, month, i + 1)) / 1000 / 60 / 60 / 24
+        );
+        if (month === 11) interval += 1;
+        yData.push(Number(month + 1) + "月" + Number(i + 1) + "日");
+        this.getMonthGraph(interval, seriesData, i, yData);
+      }
+    },
+    getMonthGraph(interval, seriesData, index, yData) {
+      this.$http
+        .get("/apis/account/graph?type=1&condition=" + interval, {
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        })
+        .then(
+          response => {
+            if (response.status === 200) {
+              let res = JSON.parse(response.bodyText);
+              seriesData[0].data[index] = 0;
+              seriesData[1].data[index] = 0;
+              seriesData[2].data[index] = 0;
+              for (let i = 0; i < res.data.length; i++) {
+                if (Number(res.data[i].key_name) === 0) {
+                  seriesData[1].data[index] = res.data[i].goods_sum;
+                } else if (Number(res.data[i].key_name) === 1) {
+                  seriesData[2].data[index] = -1 * res.data[i].goods_sum;
+                }
+              }
+              seriesData[0].data[index] =
+                -1 * (seriesData[2].data[index] + seriesData[1].data[index]);
+              this.drawDateChart(seriesData, yData);
+            } else {
+              this.$message({ type: "error", message: "图表加载失败!" });
+            }
+          },
+          response => {
+            this.$message({ type: "error", message: "图表加载失败!" });
+          }
+        );
+    },
+    handleSearchByMonth() {
+      this.drawMonthGraph(this.month.getFullYear(), this.month.getMonth());
+      this.currentPage = 1;
+      this.searchByMonth(this.currentPage);
+    },
+    searchByMonth(page) {
       this.accountData = [];
       this.listLoading = true;
       let today = new Date();
       let intervalYear =
-        Number(today.getFullYear()) - Number(this.year.getFullYear());
+        Number(today.getFullYear()) - Number(this.month.getFullYear());
       let interval =
         intervalYear * 12 +
         (Number(today.getMonth()) - Number(this.month.getMonth()));
       this.$http
         .get(
-          "/apis/account/graph?type=3&condition=" + interval + "&page=" + page,
+          "/apis/account/table?type=3&condition=" + interval + "&page=" + page,
           {
             headers: {
               token: localStorage.getItem("token")
@@ -1093,7 +1152,7 @@ export default {
       this.accountData = [];
       this.listLoading = true;
       this.$http
-        .get("/apis/account/graph?type=2&page=" + page, {
+        .get("/apis/account/table?type=2&page=" + page, {
           headers: {
             token: localStorage.getItem("token")
           }
@@ -1132,7 +1191,7 @@ export default {
       this.accountData = [];
       this.listLoading = true;
       this.$http
-        .get("/apis/account/graph?type=1&page=" + page, {
+        .get("/apis/account/table?type=1&page=" + page, {
           headers: {
             token: localStorage.getItem("token")
           }
@@ -1171,7 +1230,7 @@ export default {
       this.accountData = [];
       this.listLoading = true;
       this.$http
-        .get("/apis/account/graph?type=0&page=" + page, {
+        .get("/apis/account/table?type=0&page=" + page, {
           headers: {
             token: localStorage.getItem("token")
           }

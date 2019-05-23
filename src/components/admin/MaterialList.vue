@@ -4,13 +4,10 @@
       <el-row class="search-banner">
         <el-form :inline="true">
           <el-form-item>
-            <el-input v-model="keywords" placeholder="输入关键字" size="small"></el-input>
+            <el-input v-model="keyText" placeholder="输入关键字" size="small"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch" size="small" class="button-primary">查询</el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="addItem" size="small" class="button-primary">添加原料</el-button>
           </el-form-item>
         </el-form>
       </el-row>
@@ -42,7 +39,7 @@
                     type="primary"
                     @click="saveEdit()"
                     class="button-primary"
-                    :loading="submitLoading"
+                    :loading="saveLoading"
                   >保存</el-button>
                   <el-button size="small" @click="cancelEdit(scope.row)">取消</el-button>
                 </div>
@@ -53,7 +50,7 @@
                     type="danger"
                     plain
                     @click="deleteItem(scope.row)"
-                    :loading="submitLoading"
+                    :loading="deleteLoading"
                   >删除</el-button>
                 </div>
               </template>
@@ -87,7 +84,7 @@
                     @click="saveEdit()"
                     type="primary"
                     class="button-primary"
-                    :loading="submitLoading"
+                    :loading="saveLoading"
                   >保存</el-button>
                   <el-button size="small" @click="cancelEdit(scope.row)">取消</el-button>
                 </div>
@@ -98,7 +95,7 @@
                     type="danger"
                     plain
                     @click="deleteItem(scope.row)"
-                    :loading="submitLoading"
+                    :loading="deleteLoading"
                   >删除</el-button>
                 </div>
               </template>
@@ -107,7 +104,7 @@
         </el-col>
       </el-row>
       <el-row class="foot-banner">
-        <el-col :span="24" align="start">
+        <el-col :span="16" align="start">
           <el-pagination
             background
             class="pagination"
@@ -117,6 +114,18 @@
             :total="totalCount"
             :page-size="20"
           ></el-pagination>
+        </el-col>
+        <el-col :span="4" align="right">
+          <el-input v-model="newName" size="small" placeholder="输入新原料名称"></el-input>
+        </el-col>
+        <el-col :span="4" style="padding-left: 30px">
+          <el-button
+            type="primary"
+            @click="saveAdd"
+            size="small"
+            class="button-primary"
+            :loading="addLoading"
+          >添加原料</el-button>
         </el-col>
       </el-row>
     </el-main>
@@ -130,8 +139,12 @@ export default {
     return {
       materialData: [],
       keywords: "",
+      keyText: "",
+      newName: "",
       listLoading: false,
-      submitLoading: false,
+      saveLoading: false,
+      addLoading: false,
+      deleteLoading: false,
       isAdd: false,
       sperateIndex: 0,
       materialNew: {},
@@ -196,72 +209,78 @@ export default {
       obj.isEdit = true;
       this.materialNew = this.objDeepCopy(obj);
     },
-    saveEdit() {
-      if (this.materialNew.material_name === "") {
-        this.$message({ type: "error", message: "原料名不能为空!" });
+    saveAdd() {
+      if (this.newName === "") {
+        this.$message({ type: "warning", message: "原料名不能为空!" });
         return;
       }
-      this.submitLoading = true;
-      if (this.materialNew.id === "") {
-        this.$http
-          .post(
-            "/apis/material/add",
-            {},
-            {
-              params: {
-                material_name: this.materialNew.material_name
-              },
-              headers: {
-                token: localStorage.getItem("token")
-              }
+      this.addLoading = true;
+      this.$http
+        .post(
+          "/apis/material/add",
+          {},
+          {
+            params: {
+              material_name: this.newName
+            },
+            headers: {
+              token: localStorage.getItem("token")
             }
-          )
-          .then(response => {
-            if (response.status === 200) {
-              this.$message({ type: "success", message: "添加成功!" });
-              this.getMaterialData(this.currentPage);
-              this.materialNew = {};
-              this.submitLoading = false;
-            } else {
-              this.submitLoading = false;
-              this.$message({ type: "error", message: "添加失败!" });
-            }
-          })
-          .catch(error => {
-            this.submitLoading = false;
+          }
+        )
+        .then(response => {
+          if (response.status === 200) {
+            this.$message({ type: "success", message: "添加成功!" });
+            this.keywords = "";
+            this.getMaterialData(this.currentPage);
+            this.newName = "";
+            this.addLoading = false;
+          } else {
+            this.addLoading = false;
             this.$message({ type: "error", message: "添加失败!" });
-          });
-      } else {
-        this.$http
-          .post(
-            "/apis/material/update",
-            {},
-            {
-              params: {
-                material_id: this.materialNew.id,
-                newName: this.materialNew.material_name
-              },
-              headers: {
-                token: localStorage.getItem("token")
-              }
-            }
-          )
-          .then(response => {
-            if (response.status === 200) {
-              this.submitLoading = false;
-              this.$message({ type: "success", message: "编辑成功!" });
-              this.getMaterialData(this.currentPage);
-              this.materialNew = {};
-            } else {
-              this.submitLoading = false;
-              this.$message({ type: "error", message: "编辑失败!" });
-            }
-          })
-          .catch(error => {
-            this.submitLoading = false;
-            this.$message({ type: "error", message: "编辑失败!" });
-          });
+          }
+        })
+        .catch(error => {
+          this.addLoading = false;
+          this.$message({ type: "error", message: "添加失败!" });
+        });
+    },
+    saveEdit() {
+      if (this.materialNew.material_name === "") {
+        this.$message({ type: "warning", message: "原料名不能为空!" });
+        return;
       }
+      this.saveLoading = true;
+      this.$http
+        .post(
+          "/apis/material/update",
+          {},
+          {
+            params: {
+              material_id: this.materialNew.id,
+              newName: this.materialNew.material_name
+            },
+            headers: {
+              token: localStorage.getItem("token")
+            }
+          }
+        )
+        .then(response => {
+          if (response.status === 200) {
+            this.saveLoading = false;
+            this.$message({ type: "success", message: "编辑成功!" });
+            this.keywords = "";
+            this.getMaterialData(this.currentPage);
+            this.materialNew = {};
+          } else {
+            this.saveLoading = false;
+            this.$message({ type: "error", message: "编辑失败!" });
+          }
+        })
+        .catch(error => {
+          this.saveLoading = false;
+          this.$message({ type: "error", message: "编辑失败!" });
+        });
     },
     cancelEdit(obj) {
       if (obj.id !== "") {
@@ -279,7 +298,7 @@ export default {
         type: "warning"
       })
         .then(() => {
-          this.submitLoading = true;
+          this.deleteLoading = true;
           this.$http
             .post(
               "/apis/material/delete",
@@ -295,7 +314,7 @@ export default {
             )
             .then(response => {
               if (response.status === 200) {
-                this.submitLoading = false;
+                this.deleteLoading = false;
                 this.$message({ type: "success", message: "删除成功!" });
                 if (
                   this.materialData.length - 1 === 0 &&
@@ -305,12 +324,12 @@ export default {
                 }
                 this.getMaterialData(this.currentPage);
               } else {
-                this.submitLoading = false;
+                this.deleteLoading = false;
                 this.$message({ type: "error", message: "删除失败!" });
               }
             })
             .catch(() => {
-              this.submitLoading = false;
+              this.deleteLoading = false;
               this.$message({ type: "error", message: "删除失败!" });
             });
         })
@@ -321,14 +340,14 @@ export default {
           });
         });
     },
-    addItem() {
-      this.materialData.push({
-        id: "",
-        material_name: "",
-        isEdit: true
-      });
-      let last = this.materialData.length - 1;
-      this.materialNew = this.objDeepCopy(this.materialData[last]);
+    handlePage(val) {
+      this.currentPage = val;
+      this.getMaterialData(this.currentPage);
+    },
+    handleSearch() {
+      this.currentPage = 1;
+      this.keywords = this.keyText;
+      this.getMaterialData(this.currentPage);
     },
     objDeepCopy(source) {
       let sourceCopy = source instanceof Array ? [] : {};
@@ -341,14 +360,6 @@ export default {
         }
       }
       return sourceCopy;
-    },
-    handlePage(val) {
-      this.currentPage = val;
-      this.getMaterialData(this.currentPage);
-    },
-    handleSearch() {
-      this.currentPage = 1;
-      this.getMaterialData(this.currentPage);
     }
   }
 };

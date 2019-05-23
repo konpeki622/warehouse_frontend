@@ -4,7 +4,7 @@
       <el-row class="search-banner">
         <el-form :inline="true">
           <el-form-item>
-            <el-input v-model="keywords" placeholder="输入关键字" size="small"></el-input>
+            <el-input v-model="keyText" placeholder="输入关键字" size="small"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch" class="button-primary" size="small">
@@ -66,6 +66,7 @@ export default {
       updateData: [],
       updateLoading: false,
       keywords: "",
+      keyText: "",
       currentPage: 1,
       totalCount: 0
     };
@@ -126,6 +127,7 @@ export default {
     },
     handleSearch() {
       this.currentPage = 1;
+      this.keywords = this.keyText;
       this.getUpdateData(this.currentPage);
     }
   },
