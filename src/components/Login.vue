@@ -67,7 +67,7 @@ export default {
                   const result = JSON.parse(response.bodyText);
                   let user = result.data.user;
                   localStorage.setItem("token", result.data.token);
-                  localStorage.setItem("menu_id", user.menu_id);
+                  localStorage.setItem("menu_id", user.auth);
                   localStorage.setItem("username", this.loginForm.account);
                   if (this.checked) {
                     localStorage.setItem("checked", 1);

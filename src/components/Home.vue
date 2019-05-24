@@ -132,6 +132,9 @@ export default {
       // Evan: 这里设定密码的规则，value值是输入框中的值
       // 密码必须含有字母和数字，长度为6-18位
       let myReg = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z_]{6,16}$/;
+      if (value === this.changeForm.oldPass) {
+        return callback(new Error("密码不能与旧密码相同"));
+      }
       if (!value) {
         return callback(new Error("请输入密码"));
       } else if (!myReg.test(value)) {
@@ -190,50 +193,56 @@ export default {
       this.formVisible = true;
     },
     submitChange() {
-      this.$refs.changeForm.validate(valid => {
+      var _this = this;
+      _this.$confirm("修改密码后退出登录，确认修改吗?", "提示")
+        .then(() => {
+           _this.$refs.changeForm.validate(valid => {
         if (valid) {
-          this.changeLoading = true;
+          _this.changeLoading = true;
           const url =
             "/apis/password?username=" +
             localStorage.getItem("username") +
             "&oldPassword=" +
-            this.changeForm.oldPass +
+            _this.changeForm.oldPass +
             "&newPassword=" +
-            this.changeForm.password;
-          this.$http.post(url).then(
+            _this.changeForm.password;
+         _this.$http.post(url).then(
             response => {
               if (response.status === 200) {
-                this.$notify({
+                _this.$notify({
                   title: "密码修改成功",
                   message: "",
                   type: "success",
                   duration: 2000
                 });
-                this.formVisible = false;
-                this.changeLoading = false;
+                _this.formVisible = false;
+                _this.changeLoading = false;
+                localStorage.removeItem("menu_id");
+          localStorage.removeItem("token");
+          _this.$router.push("/login");
               } else if (response.status === 205) {
-                this.$notify.error({
+                _this.$notify.error({
                   title: "密码修改失败",
                   message: "旧密码错误",
                   duration: 2000
                 });
-                this.changeLoading = false;
+                _this.changeLoading = false;
               } else {
-                this.$notify.error({
+                _this.$notify.error({
                   title: "密码修改失败",
                   message: "网络错误",
                   duration: 2000
                 });
-                this.changeLoading = false;
+                _this.changeLoading = false;
               }
             },
             response => {
-              this.$notify.error({
+              _this.$notify.error({
                 title: "密码修改失败",
                 message: "网络错误",
                 duration: 2000
               });
-              this.changeLoading = false;
+              _this.changeLoading = false;
             }
           );
         } else {
@@ -241,13 +250,17 @@ export default {
           return false;
         }
       });
+          
+        })
+        .catch(() => {});
     },
     //退出登录
     logout: function() {
       var _this = this;
       this.$confirm("确认退出吗?", "提示")
         .then(() => {
-          localStorage.removeItem("user");
+          localStorage.removeItem("menu_id");
+          localStorage.removeItem("token");
           _this.$router.push("/login");
         })
         .catch(() => {});
@@ -369,7 +382,7 @@ export default {
 }
 
 .dialog .form {
-  width: 100%;
+  width: 50%;
   margin: 0 auto;
 }
 
@@ -378,7 +391,7 @@ export default {
 }
 
 .dialog .form .form-input {
-  width: 200px;
+  width: 100%;
 }
 
 .dialog .dialog-footer {

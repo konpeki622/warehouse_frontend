@@ -16,6 +16,7 @@
           <span>
             <el-date-picker
               v-model="year"
+              :clearable="false"
               type="year"
               style="width: 150px;"
               placeholder="选择年"
@@ -43,6 +44,7 @@
         <el-col :span="4" v-if="searchType === 2">
             <el-date-picker
               v-model="month"
+              :clearable="false"
               type="month"
               format="yyyy年M月"
               style="width: 150px;"
@@ -229,11 +231,13 @@ export default {
           bottom: "3%",
           containLabel: true
         },
+        // x轴
         xAxis: [
           {
             type: "value"
           }
         ],
+        // y轴
         yAxis: [
           {
             type: "category",
@@ -241,6 +245,7 @@ export default {
             data: yData
           }
         ],
+        // 柱状图的数据
         series: seriesData
       });
     },
@@ -402,6 +407,7 @@ export default {
         {
           name: "销售量",
           type: "bar",
+          // 12个月的数据
           data: new Array(12)
         },
         {

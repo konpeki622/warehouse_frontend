@@ -26,6 +26,7 @@
           <span>
             <el-date-picker
               v-model="year"
+              :clearable="false"
               type="year"
               style="width: 150px;"
               placeholder="选择年"
@@ -53,6 +54,7 @@
         <el-col :span="4" v-if="graphType === 0 && searchType === 2">
           <el-date-picker
             v-model="month"
+            :clearable="false"
             type="month"
             format="yyyy年M月"
             style="width: 150px;"
