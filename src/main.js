@@ -14,7 +14,7 @@ Vue.use(Vuex)
 Vue.use(VueResource)
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('menu_id');
   if (token && to.path === '/404') {
 
     switch (localStorage.getItem('menu_id')) {
