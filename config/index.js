@@ -13,7 +13,7 @@ module.exports = {
     proxyTable: {
       '/apis': {
         // 测试环境
-        target: 'http://localhost:8888/ssm_war',  // 接口域名
+        target: 'http://118.89.119.230:8888/ssm',  // 接口域名
         changeOrigin: true,  //是否跨域
         pathRewrite: {
           '^/apis': ''   //需要rewrite重写的,

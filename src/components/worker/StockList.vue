@@ -40,40 +40,49 @@
               <div class="table-text">{{scope.row.area_name}}</div>
             </template>
           </el-table-column>
-          <el-table-column label="余量(米)" width="150" align="center">
+          <el-table-column label="库存余量(米)" width="150" align="center">
             <template slot-scope="scope">
-              <div class="table-text">{{scope.row.material_size}}</div>
+              <div class="table-text">
+                <div>{{scope.row.material_size}}</div>
+                <div style="font-size: 7px; color: #bababa">{{scope.row.material_date}}</div>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="实际余量(米)" align="center">
+          <el-table-column label="盘点余量(米)" align="center">
             <template slot-scope="scope">
-              <el-input v-model="realStock[scope.$index]" size="small" style="width: 80px"></el-input>
+              <div v-if="scope.row.inventory_size === null">-</div>
+              <div v-else class="table-text">
+                <div>{{scope.row.inventory_size}}</div>
+                <div style="font-size: 7px; color: #bababa">{{scope.row.inventory_date}}</div>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="比对结果" align="center">
+          <el-table-column label="误差(米)" align="center">
             <template slot-scope="scope">
-              <div v-if="realStock[scope.$index] === ''">-</div>
+              <div v-if="scope.row.inventory_size === null">-</div>
               <div v-else>
-                <div v-if="Number(realStock[scope.$index]) - onlineStock[scope.$index] > 0">
+                <div v-if="scope.row.inventory_size - scope.row.material_size > 0">
                   <span
                     class="result-more"
-                  >+{{toFourDecimal(Number(realStock[scope.$index]) - onlineStock[scope.$index])}}</span>
+                  >+{{toFourDecimal(Number(scope.row.inventory_size - scope.row.material_size))}}</span>
+                  <span>(</span>
                   <span>
-                    (
-                    <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>)
+                    <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>
                   </span>
+                  <span>)</span>
                 </div>
-                <div v-else-if="Number(realStock[scope.$index]) - onlineStock[scope.$index] === 0">
+                <div v-else-if="scope.row.inventory_size - scope.row.material_size === 0">
                   <i class="el-icon-success"></i>
                 </div>
                 <div v-else>
                   <span
                     class="result-less"
-                  >{{toFourDecimal(Number(realStock[scope.$index]) - onlineStock[scope.$index])}}</span>
+                  >{{toFourDecimal(Number(scope.row.inventory_size - scope.row.material_size))}}</span>
+                  <span>(</span>
                   <span>
-                    (
-                    <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>)
+                    <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>
                   </span>
+                  <span>)</span>
                 </div>
               </div>
             </template>
@@ -219,9 +228,6 @@ export default {
           label: "按地区"
         }
       ],
-      onlineStock: [],
-      realStock: [],
-      realStockReset: true,
       area_name: "",
       material_name: "",
       materialData: [],
@@ -239,10 +245,6 @@ export default {
   methods: {
     getStockData(page) {
       this.stockData = [];
-      this.onlineStock = [];
-      if (this.realStockReset) {
-        this.realStock = [];
-      }
       let url = "";
       if (this.keywords === "") {
         url = "/apis/goods?page=" + page;
@@ -272,17 +274,15 @@ export default {
                 area_id: goodsList.data[i].area_id,
                 material_name: goodsList.data[i].material_name,
                 area_name: goodsList.data[i].area_name,
-                material_size: goodsList.data[i].material_size
+                material_size: goodsList.data[i].material_size,
+                inventory_size: goodsList.data[i].inventory_size,
+                material_date: goodsList.data[i].material_date,
+                inventory_date: goodsList.data[i].inventory_date
               });
-              this.onlineStock.push(goodsList.data[i].material_size);
-              if (this.realStockReset) {
-                this.realStock.push("");
-              }
               i++;
             }
             this.totalCount = goodsList.count;
             this.listLoading = false;
-            this.realStockReset = true;
           } else {
             this.listLoading = false;
             this.$message({ type: "error", message: "加载失败!" });
@@ -305,24 +305,16 @@ export default {
         }
       )
         .then(() => {
-          let type = 0;
-          let gap = Number(this.realStock[index]) - this.onlineStock[index];
-          if (gap > 0) {
-            type = 0;
-          } else {
-            type = 1;
-            gap = gap * -1;
-          }
           this.listLoading = true;
+          let t = new Date();
           this.$http
             .post(
               "/apis/goods/alter",
               {},
               {
                 params: {
-                  type: type,
-                  updateSize: gap,
-                  goodsId: this.stockData[index].id
+                  goodsId: this.stockData[index].id,
+                  update_date: t.format("yyyy-MM-dd HH:mm:ss")
                 },
                 headers: {
                   token: localStorage.getItem("token")
@@ -334,7 +326,6 @@ export default {
                 if (response.status === 200) {
                   this.$message({ type: "success", message: "修正成功!" });
                   this.listLoading = false;
-                  this.realStockReset = false;
                   this.getStockData(this.currentPage);
                 } else {
                   this.$message({ type: "error", message: "修正失败!" });
@@ -375,7 +366,7 @@ export default {
     },
     submitAdd() {
       if (this.goods.update_size === 0) {
-        this.$message({ type: "error", message: "请选择数量!" });
+        this.$message({ type: "error", message: "请填写长度!" });
         return;
       }
       if (this.goods.behavior === 1 && this.goods.deliver_owner === "") {
@@ -475,7 +466,6 @@ export default {
     },
     handlePage(val) {
       this.currentPage = val;
-      this.realStockReset = true;
       this.getStockData(this.currentPage);
     },
     toFourDecimal(num) {

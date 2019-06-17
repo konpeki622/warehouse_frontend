@@ -375,7 +375,7 @@ export default {
     },
     submitAdd: function() {
       if (this.goods.update_size === 0) {
-        this.$message({ type: "error", message: "请选择数量!" });
+        this.$message({ type: "error", message: "请填写长度!" });
         return;
       }
       if (this.goods.behavior === 1 && this.goods.deliver_owner === "") {
