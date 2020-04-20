@@ -118,7 +118,7 @@
             size="small"
             class="button-primary"
             type="primary"
-          >打印本页</el-button>
+          >导出全部</el-button>
         </el-col>
       </el-row>
     </el-main>

@@ -120,7 +120,7 @@
               :total="totalCount"
             ></el-pagination>
           </el-col>
-          <el-col :span="8" align="end">
+          <!-- <el-col :span="8" align="end">
             <el-button
               @click="handlePrint"
               :loading="printLoading"
@@ -128,7 +128,7 @@
               class="button-primary"
               type="primary"
             >打印本页</el-button>
-          </el-col>
+          </el-col> -->
         </el-row>
       </el-row>
       <el-row v-else>

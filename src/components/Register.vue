@@ -34,11 +34,49 @@
             placeholder="请再次输入密码"
           ></el-input>
         </el-form-item>
+        <el-form-item prop="nickname" style="margin-top: 20px">
+          <el-input
+            type="text"
+            v-model="registerForm.nickname"
+            auto-complete="off"
+            placeholder="请输入姓名"
+          ></el-input>
+        </el-form-item>
+        <el-form-item prop="gender" style="margin-top: 5px">
+          <el-radio-group v-model="registerForm.gender">
+            <el-radio label="男"></el-radio>
+            <el-radio label="女"></el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item prop="workid" style="margin-top: 20px">
+          <el-input
+            type="text"
+            v-model="registerForm.workid"
+            auto-complete="off"
+            placeholder="请输入工号"
+          ></el-input>
+        </el-form-item>
         <el-form-item prop="auth" style="margin-top: 5px">
           <el-radio-group v-model="registerForm.auth">
             <el-radio :label="0">原料管理员</el-radio>
             <el-radio :label="1">财务经理</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item prop="phone" style="margin-top: 20px">
+          <el-input
+            type="text"
+            v-model="registerForm.phone"
+            auto-complete="off"
+            placeholder="请输入电话"
+          ></el-input>
+        </el-form-item>
+        <el-form-item prop="email" style="margin-top: 20px">
+          <el-input
+            type="text"
+            v-model="registerForm.email"
+            auto-complete="off"
+            placeholder="请输入邮箱"
+          ></el-input>
         </el-form-item>
         <el-form-item style="width:100%;">
           <el-button
@@ -90,7 +128,10 @@ export default {
         username: "",
         password: "",
         passConfirm: "",
-        auth: 0
+        auth: 0,
+        nickname: "",
+        gender: "男",
+        workid: ""
       },
       rules: {
         username: [
@@ -101,7 +142,10 @@ export default {
         ],
         passConfirm: [
           { required: true, validator: repasswordValidity, trigger: "blur" }
-        ]
+        ],
+        nickname: [{required: true, message: "请输入姓名", trigger: "blur"}],
+        email: [{required: true, message: "请输入邮箱", trigger: "blur"}],
+        phone: [{required: true, message: "请输入电话", trigger: "blur"}]
       },
       registering: false
     };
@@ -116,14 +160,19 @@ export default {
           this.registering = true;
           this.$http
             .post(
-              "/apis/register",
-              {},
+              "/apis/register",{},
               {
                 params: {
                   username: this.registerForm.username,
                   password: this.registerForm.password,
-                  auth: this.registerForm.auth
-                }
+                  auth: this.registerForm.auth,
+                  nickname: this.registerForm.nickname,
+                  workid: this.registerForm.workid,
+                  gender: this.registerForm.gender,
+                  phone: this.registerForm.phone.toString(),
+                  email: this.registerForm.email
+                },
+                //headers: {'Content-Type': 'application/json'}
               }
             )
             .then(

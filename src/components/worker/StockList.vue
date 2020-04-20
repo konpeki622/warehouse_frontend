@@ -65,11 +65,9 @@
                   <span
                     class="result-more"
                   >+{{toFourDecimal(Number(scope.row.inventory_size - scope.row.material_size))}}</span>
-                  <span>(</span>
-                  <span>
+                  <!-- <span>
                     <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>
-                  </span>
-                  <span>)</span>
+                  </span>-->
                 </div>
                 <div v-else-if="scope.row.inventory_size - scope.row.material_size === 0">
                   <i class="el-icon-success"></i>
@@ -78,11 +76,9 @@
                   <span
                     class="result-less"
                   >{{toFourDecimal(Number(scope.row.inventory_size - scope.row.material_size))}}</span>
-                  <span>(</span>
-                  <span>
+                  <!-- <span>
                     <el-button type="text" @click="alterStock(scope.$index)" class="button-text">修正</el-button>
-                  </span>
-                  <span>)</span>
+                  </span>-->
                 </div>
               </div>
             </template>
@@ -91,10 +87,16 @@
             <template slot-scope="scope">
               <el-button
                 size="small"
-                @click="handleAdd(scope.$index)"
+                @click="handleAdd(scope.$index, 0)"
                 class="button-plain"
                 round
-              >更新库存</el-button>
+              >进货</el-button>
+              <el-button
+                size="small"
+                @click="handleQuery(scope.row.id, scope.$index)"
+                class="button-plain"
+                round
+              >查看位置</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -110,7 +112,7 @@
             :total="totalCount"
           ></el-pagination>
         </el-col>
-        <el-col :span="8" align="end">
+        <!-- <el-col :span="8" align="end">
           <el-button
             @click="handlePrint"
             :loading="printLoading"
@@ -118,11 +120,40 @@
             type="primary"
             class="button-primary"
           >打印本页</el-button>
-        </el-col>
+        </el-col> -->
       </el-row>
+      <el-dialog title="库存位置" :visible.sync="positionVisible" class="dialog">
+        <el-row>
+          <el-table :data="placeList" style="width: 100%">
+            <el-table-column label="位置" align="center">
+              <template slot-scope="scope">
+                <div class="table-text">{{scope.row.space_name}}</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="余量(米)" align="center">
+              <template slot-scope="scope">
+                <div class="table-text">{{scope.row.occupy}}</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" align="center">
+              <template slot-scope="scope">
+                <el-button
+                  size="small"
+                  @click="handleAdd(goodsIndex, 1, scope.row.place, scope.row.occupy)"
+                  class="button-plain"
+                  round
+                >出库</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-row>
+        <div slot="footer" class="dialog-footer" align="center">
+          <el-button @click="positionVisible = false" size="small">确认</el-button>
+        </div>
+      </el-dialog>
       <div>
         <!--新增界面-->
-        <el-dialog title="更新库存信息" :visible.sync="addFormVisible" class="dialog">
+        <el-dialog title="填写订单" :visible.sync="addFormVisible" class="dialog" @close="cancelAdd">
           <el-form
             :model="goods"
             label-width="80px"
@@ -130,16 +161,6 @@
             class="form"
             v-loading="addLoading"
           >
-            <el-form-item>
-              <el-row style="padding-left: 80px">
-                <el-radio v-model="goods.behavior" :label="0">
-                  <span class="form-label">入库</span>
-                </el-radio>
-                <el-radio v-model="goods.behavior" :label="1">
-                  <span class="form-label">出库</span>
-                </el-radio>
-              </el-row>
-            </el-form-item>
             <el-form-item style="margin-top: 10px">
               <el-row :gutter="10">
                 <el-col :span="4">
@@ -169,7 +190,7 @@
                   <el-input-number
                     v-model="goods.update_size"
                     :min="0"
-                    :max="10000"
+                    :max="maxOccupy"
                     :step="0.5"
                     size="small"
                     class="form-input"
@@ -177,16 +198,29 @@
                 </el-col>
               </el-row>
             </el-form-item>
-            <el-form-item v-if="goods.behavior === 1" style="margin-top: 10px">
+            <el-form-item style="margin-top: 10px" v-if="goods.behavior === 1">
               <el-row :gutter="5">
                 <el-col :span="4">
-                  <div class="form-label">交易人</div>
+                  <div class="form-label">收件人</div>
                 </el-col>
                 <el-col :span="20">
-                  <el-input v-model="goods.deliver_owner" size="small" class="form-input"></el-input>
+                  <el-input class="form-input" v-model="goods.deliver_owner" size="small"></el-input>
                 </el-col>
               </el-row>
             </el-form-item>
+            <!-- <el-form-item style="margin-top: 10px">
+              <el-row :gutter="5">
+                <el-col :span="4">
+                  <div class="form-label">到货日期</div>
+                </el-col>
+                <el-col :span="20">
+                  <el-input
+                    v-model="goods.date"
+                    size="small"
+                  ></el-input>
+                </el-col>
+              </el-row>
+            </el-form-item>-->
           </el-form>
           <div slot="footer" class="dialog-footer" align="center">
             <el-button @click="cancelAdd" size="small">取消</el-button>
@@ -239,7 +273,13 @@ export default {
       keyText: "",
       searchType: "1",
       addFormVisible: false,
-      currentPage: 1
+      currentPage: 1,
+      positionVisible: false,
+      placeList: [],
+      placeId: 0,
+      goodsIndex: 0,
+      goodsId: 0,
+      maxOccupy: 10000
     };
   },
   methods: {
@@ -294,6 +334,25 @@ export default {
       this.keywords = this.keyText;
       this.getStockData(this.currentPage);
     },
+    handleQuery(id, index) {
+      this.placeList = [];
+      this.goodsIndex = index;
+      this.$http
+        .get("/apis/goods/query?goodsId=" + id, {
+          headers: {
+            token: localStorage.getItem("token")
+          }
+        })
+        .then(response => {
+          let data = JSON.parse(response.bodyText);
+          if (response.status === 200) {
+            this.positionVisible = true;
+            this.placeList = data.data;
+          } else {
+            this.$message({ type: "error", message: "加载失败!" });
+          }
+        });
+    },
     alterStock(index) {
       this.$confirm(
         "确认修正库存编号[" + this.stockData[index].id + "]吗?",
@@ -345,11 +404,18 @@ export default {
           });
         });
     },
-    handleAdd(index) {
+    handleAdd(index, behavior, place, occupy) {
       this.addFormVisible = true;
+      this.maxOccupy = 10000;
       this.material_name = this.stockData[index].material_name;
       this.area_name = this.stockData[index].area_name;
       this.goods.goods_id = this.stockData[index].id;
+      this.goods.material_size = this.stockData[index].material_size;
+      this.goods.behavior = behavior;
+      if (place) {
+        this.placeId = place;
+        this.maxOccupy = occupy;
+      }
     },
     cancelAdd() {
       this.addFormVisible = false;
@@ -358,7 +424,7 @@ export default {
         area_id: 0,
         update_date: "",
         goods_id: 0,
-        deliver_owner: null,
+        deliver_owner: "",
         update_size: 0,
         behavior: 0,
         username: ""
@@ -376,20 +442,24 @@ export default {
       this.goods.username = localStorage.getItem("username");
       let t = new Date();
       this.goods.update_date = t.format("yyyy-MM-dd HH:mm:ss");
+      let arg = {
+        goods_id: this.goods.goods_id,
+        update_date: this.goods.update_date,
+        update_size: this.goods.update_size,
+        behavior: this.goods.behavior,
+        username: this.goods.username,
+        deliver_owner: this.goods.deliver_owner
+      };
+      if (this.goods.behavior === 1) {
+        arg.place = this.placeId;
+      }
       this.addLoading = true;
       this.$http
         .post(
           "/apis/goods/update",
           {},
           {
-            params: {
-              goods_id: this.goods.goods_id,
-              update_date: this.goods.update_date,
-              update_size: this.goods.update_size,
-              behavior: this.goods.behavior,
-              username: this.goods.username,
-              deliver_owner: this.goods.deliver_owner
-            },
+            params: arg,
             headers: {
               token: localStorage.getItem("token")
             }
@@ -398,9 +468,13 @@ export default {
         .then(
           response => {
             if (response.status === 200) {
-              this.$message({ type: "success", message: "添加成功!" });
+              this.$message({ type: "success", message: "处理成功!" });
               this.addLoading = false;
               this.addFormVisible = false;
+              this.goodsId = this.goods.goods_id;
+              if (this.goods.behavior === 1) {
+                this.submitDeliver();
+              }
               this.goods = {
                 material_id: 0,
                 area_id: 0,
@@ -414,13 +488,45 @@ export default {
               this.currentPage = 1;
               this.getStockData(this.currentPage);
             } else {
-              this.$message({ type: "error", message: "添加失败!" });
+              this.$message({ type: "error", message: "处理失败!" });
               this.addLoading = false;
             }
           },
           response => {
-            this.$message({ type: "error", message: "添加失败!" });
+            this.$message({ type: "error", message: "处理失败!" });
             this.addLoading = false;
+          }
+        );
+    },
+    submitDeliver() {
+      this.$http
+        .post(
+          "/apis/goods/place",
+          {},
+          {
+            params: {
+              goods_id: this.goods.goods_id,
+              update_size: this.goods.update_size,
+              behavior: this.goods.behavior,
+              place: this.placeId
+            },
+            headers: {
+              token: localStorage.getItem("token")
+            }
+          }
+        )
+        .then(
+          response => {
+            if (response.status === 200) {
+              this.$message({ type: "success", message: "处理成功" });
+              this.handleQuery(this.goodsId);
+            } else {
+              that.$message({ type: "error", message: "处理失败" });
+            }
+          },
+          response => {
+            that.$message({ type: "error", message: "处理失败" });
+            that.addLoading = false;
           }
         );
     },
@@ -474,7 +580,7 @@ export default {
       if (dotIndex === -1 || dotIndex + 6 > str.length) {
         return num;
       }
-      return num.toFixed(4);
+      return num.toFixed(2);
     }
   },
   mounted() {
